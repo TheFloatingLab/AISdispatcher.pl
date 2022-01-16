@@ -17,29 +17,37 @@ AISdispatcher is written with the assumption that you are not building a dedicat
 NMEA data can be streamed over WiFi. Usually this is done by UDP over port 10110. If you don't stream your NMEA data over WiFi, I strongly recommend you to start doing so. The benefits are that any computer logged on to your private WiFi network has access to your NMEA data, which includes your position, wind and depth data, AIS data, etc. This means that you can run OpenCPN on any laptop or even Android phones, without a physical connection to your boat devices. There are several hardware devices that can do this, I use one from [ShipModul](http://www.shipmodul.com/en/index.html).
 
 If you have NMEA data broadcasted on your own network, use 0.0.0.0 as IP address and add the port number, which is usually 10110. The input source is thus specified as "0.0.0.0:10110", like this:
+
 `perl aisdispatcher.pl 0.0.0.0:10110`
 
 ### OpenCPN
 You probably have [OpenCPN](https://opencpn.org), and otherwise this is just another marvel of software I strongly recommend. Assuming that you have setup OpenCPN to have access to your AIS data, you can easily forward it from OpenCPN to AISdispatcher.pl. Go to the connections tab, and add an UDP output connection.
 
 In this case, the AISdispatcher.pl input source is specified as "127.0.0.1:10110", like this:
+
 `perl aisdispatcher.pl 127.0.0.1:10110`
 
 ### GPSD
 [GPSD](https://gpsd.gitlab.io/gpsd/) is often used as an intermediate between your physical GPS/AIS hardware device and software clients on Linux, Android systems, driverless cars, aircraft, etc. Assuming that you run AISdispatcher.pl on the computer running GPSD, you use the input source "--gpsd 127.0.0.1:2947", like this:
+
 `perl aisdispatcher.pl --gpsd 127.0.0.1:2947`
 The "--gpsd" option is used to let AISdispatcher.pl know that the input is coming from GPSD. The GPSD connection is by TCP, so the --gpsd option automatically includes the --tcp option as well.
 
 ## Using AISdispatcher.pl
 After downloading, on Linux systems (skip this if you use Windows), set the executable flag with:
+
 `chmod a+x aisdispatcher.pl`
 
 First you should verify that AISdispatcher.pl successfully connects to the input source and that it is receiving data. Run AISdispatcher in the terminal with the input source applicable to your system, but no outputs, like this:
+
 `perl aisdispatcher.pl 0.0.0.0:10110`
+
 If everything is working as intended, you should see a steady stream of NMEA data on the screen. End the program with Ctrl-C once you get bored.
 
 Now it is time to test run without actually sending out any data, by using the --test option. You can specify the output to the aggregation services to make the test more realistic. You should have received a specific IP address and PORT number to forward the data to. Add these to the command line, like this:
+
 `perl aisdispatcher.pl --test 0.0.0.0:10110 1.2.3.4:555`
+
 You can enter multiple aggregation addresses. The output on the screen should be different now, with only the filtered relevant NMEA messages. Depending on the amount of boats you are reporting, it can take up to three minutes before at least your own boat is reported. The AIS message should start with "!AIVDM".
 
 If you run the program with the default interval set, you will see that AISdispatcher.pl maintains a table with records for each individual MMSI number. New MMSI numbers will be added when they present themselves, and if they send too many position updates, some of them will be rejected. Again, once you get bored, it is time for the next step.
@@ -47,6 +55,7 @@ If you run the program with the default interval set, you will see that AISdispa
 Run the program again but this time without the --test option. You should wait some minutes and then go to your "station page" on the respective aggregation site(s). They should report receiving data from you! Note that your boat won't be immediately visible on their public map or mobile phone app. Apparently, your data is first scrutinized to see if it correlates with other sources before it is made public, which can take a few days.
 
 If all is working as intended, you can now make the installation final. The following command should be somewhere on your system so that it will run automatically when you start the computer. The option --daemon is used to specify that it should run as a service in the background.
+
 `perl aisdispatcher.pl --daemon 0.0.0.0:10110 1.2.3.4:555`
 
 Note that in daemon mode you won't get any screen output while it is running. If you want to have a peek about what is going on, you can run AISdispatcher.pl again with the --test mode while the daemon is still running in the background.
@@ -54,7 +63,7 @@ Note that in daemon mode you won't get any screen output while it is running. If
 ## Command line options
 
 Usage:
-perl aisdispatcher.pl [OPTIONS] <SOURCE IP:PORT> [<UDP TARGET IP:PORT> ...]
+perl aisdispatcher.pl [OPTIONS] &lt;SOURCE IP:PORT&gt; [&lt;UDP TARGET IP:PORT&gt; ...]
 
 --help
 This option displays a small help screen
@@ -72,10 +81,10 @@ Most AIS receivers have a special NMEA message to indicate the position of your 
 If you only care about your own boat position on the map, or are worried about the privacy of your fellow boaters, or want to cut down even more on your data consumption, you can use the --justme option. In that case only information about your own boat will be revealed.
 
 --interval=<SECONDS>
-By default AIS position updates from individual MMSI's are not sent more frequently than 25 seconds apart. You can change this value to anything you like. Anything less than 4 seconds disables the position update throttling (and saves some CPU and memory usage). Try to avoid values that are a multitude of 30, as this interferes with the AIS favored 30 seconds or minute intervals. For more information about this see the Technical notes.
+By default AIS position updates from individual MMSI's are not sent more frequently than 25 seconds apart. You can change this value to anything you like. Anything less than 4 seconds disables the position update throttling (and saves some CPU and memory usage). Try to avoid values that are a multitude of 30, as this interferes with the AIS favored 30 seconds or minute intervals. For more information about this see the [Technical notes](#notes).
 
 --sid=<SOURCE ID>
-With this option you can add a marking to your outgoing data so the aggregator can identify you as the source. SOURCE ID is an alphanumeric string of maximal 15 characters, for ships I would suggest to enter your MMSI number in this field. All aggregators understand --sid, except for MarineTraffic. If you feed to MarineTraffic together with other aggregators, specify the MarineTraffic HOST:IP first, then specify the --sid option, and then the other aggregators. For more information and possible uses of this option see the Technical notes.
+With this option you can add a marking to your outgoing data so the aggregator can identify you as the source. SOURCE ID is an alphanumeric string of maximal 15 characters, for ships I would suggest to enter your MMSI number in this field. All aggregators understand --sid, except for MarineTraffic. If you feed to MarineTraffic together with other aggregators, specify the MarineTraffic HOST:IP first, then specify the --sid option, and then the other aggregators. For more information and possible uses of this option see the [Technical notes](#notes).
 
 --test
 If this option is used, AISdispatcher.pl will work in normal mode, except that it does not actually send out any data. With this option you can run AISdispatcher.pl while another instance is running in daemon mode.
@@ -83,6 +92,7 @@ If this option is used, AISdispatcher.pl will work in normal mode, except that i
 --daemon
 If this option is used, the program terminates but leaves a service running in the background. Note that in this case you can not run a second instance of AISdispatcher.pl from the command line (except with the use of option --test), because otherwise you would be feeding all information to the aggregation services twice.
 
+<a name="notes"></a>
 ## Technical notes
 
 ### Filtering
@@ -115,7 +125,7 @@ If you are feeding multiple aggregation services, your data consumption goes up 
 ### Source ID (--sid)
 With this option you can add a marking to the outgoing data. It uses the NMEA 4.0 tag block. The following is prepended to the NMEA sentence: 
 
-\s:<SID>*<NMEA CHECKSUM>\
+`\s:<SID>*<NMEA CHECKSUM>\`
 
 According to the NMEA 4.0 specs, this should be accepted by NMEA interpreters, and indeed, almost all AIS aggregators do, with the notable exception of MarineTraffic.
 
